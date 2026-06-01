@@ -29,11 +29,29 @@ Set for **Production** (and Preview if you want):
 | `NODE_ENV` | `production` | Backend |
 | `CORS_ORIGINS` | `https://your-app.vercel.app` | Backend |
 | `CLIENT_URL` | `https://your-app.vercel.app` | Backend |
-| `VITE_API_URL` | `/_/backend` | Frontend |
+| `VITE_API_URL` | `/_/backend` | Frontend (monorepo, same project) |
 
 **Important:** Use **MongoDB Atlas**, not `localhost`. Local MongoDB will not work on Vercel.
 
 After the first deploy, replace `your-app.vercel.app` with your real Vercel URL in `CORS_ORIGINS` and `CLIENT_URL`.
+
+### Frontend-only project (e.g. `vercel-frontend-qpf6.vercel.app`)
+
+If you deployed **only** the `frontend/` folder, the app must **not** call `localhost:5001`. In that Vercel project set:
+
+| Variable | Value |
+|----------|--------|
+| `VITE_API_URL` | `https://YOUR-BACKEND-APP.vercel.app/_/backend` |
+
+Then **Redeploy** the frontend (env vars are baked in at build time).
+
+On the **backend** Vercel project set:
+
+| Variable | Value |
+|----------|--------|
+| `CORS_ORIGINS` | `https://vercel-frontend-qpf6.vercel.app` |
+
+(Use your real frontend URL.)
 
 ## 4. URLs after deploy
 

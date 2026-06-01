@@ -25,7 +25,17 @@ const app = express();
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(
 	cors({
-		origin: env.corsOrigins,
+		origin(origin, callback) {
+			if (!origin) return callback(null, true);
+			if (env.corsOrigins.includes(origin)) return callback(null, true);
+			try {
+				const host = new URL(origin).hostname;
+				if (host.endsWith('.vercel.app')) return callback(null, true);
+			} catch {
+				/* ignore */
+			}
+			callback(new Error(`CORS blocked for origin: ${origin}`));
+		},
 		credentials: true,
 	})
 );
