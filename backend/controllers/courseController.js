@@ -2,7 +2,7 @@ import Course from '../models/Course.js';
 import { asyncHandler } from '../middleware/errorMiddleware.js';
 import { sendSuccess, sendPaginated } from '../utils/apiResponse.js';
 import { getPagination, buildPaginationMeta } from '../utils/pagination.js';
-import { getFacultyByUser } from '../helpers/profileHelper.js';
+import { getFacultyForUser } from '../helpers/profileHelper.js';
 
 const populateOpts = [
 	{ path: 'faculty', select: 'employeeId department designation' },
@@ -18,7 +18,7 @@ const prepareCourseBody = async (req, body) => {
 	}
 
 	if (req.user.role === 'faculty') {
-		const profile = await getFacultyByUser(req.user._id);
+		const profile = await getFacultyForUser(req.user._id);
 		if (!profile) {
 			res.status(400);
 			throw new Error('Faculty profile not found for this account');
@@ -38,7 +38,7 @@ export const courseList = asyncHandler(async (req, res) => {
 	if (req.query.academicYear) filter.academicYear = req.query.academicYear;
 
 	if (req.user.role === 'faculty') {
-		const profile = await getFacultyByUser(req.user._id);
+		const profile = await getFacultyForUser(req.user._id);
 		if (profile) filter.faculty = profile._id;
 	}
 

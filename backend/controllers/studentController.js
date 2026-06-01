@@ -2,9 +2,9 @@ import Student from '../models/Student.js';
 import { asyncHandler } from '../middleware/errorMiddleware.js';
 import { sendSuccess, sendPaginated } from '../utils/apiResponse.js';
 import { getPagination, buildPaginationMeta } from '../utils/pagination.js';
-import { getStudentByUser, getFacultyByUser } from '../helpers/profileHelper.js';
+import { getStudentByUser, getFacultyForUser } from '../helpers/profileHelper.js';
 import { pickStudentProfile, validateStudentProfile } from '../helpers/studentValidation.js';
-import { buildFacultyStudentQuery, canFacultyAccessStudent } from '../helpers/facultyStudents.js';
+import { buildFacultyStudentQuery, facultyCanViewStudent } from '../helpers/facultyStudents.js';
 
 const populateOpts = [
 	{ path: 'user', select: 'name email phone profilePhoto role' },
@@ -27,7 +27,7 @@ export const studentList = asyncHandler(async (req, res) => {
 	}
 
 	if (req.user.role === 'faculty' && !req.query.branch) {
-		const profile = await getFacultyByUser(req.user._id);
+		const profile = await getFacultyForUser(req.user._id);
 		const facultyScope = await buildFacultyStudentQuery(profile);
 		if (facultyScope) {
 			filter.$and = [{ ...(searchOr ? { $or: searchOr } : {}) }, facultyScope].filter(
@@ -65,11 +65,13 @@ export const getStudent = asyncHandler(async (req, res) => {
 	}
 
 	if (req.user.role === 'faculty') {
-		const profile = await getFacultyByUser(req.user._id);
-		const allowed = await canFacultyAccessStudent(profile, student);
+		const profile = await getFacultyForUser(req.user._id);
+		const allowed = await facultyCanViewStudent(profile, student._id);
 		if (!allowed) {
 			res.status(403);
-			throw new Error('Not authorized to view this student');
+			throw new Error(
+				'This student is outside your department or courses. You can only view students in your branch or enrolled in your courses.'
+			);
 		}
 	}
 

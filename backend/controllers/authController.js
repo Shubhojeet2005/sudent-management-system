@@ -3,7 +3,7 @@ import User from '../models/User.js';
 import Faculty from '../models/Faculty.js';
 import Student from '../models/Student.js';
 import { pickStudentProfile, validateStudentProfile } from '../helpers/studentValidation.js';
-import { resolveFacultyUser } from '../helpers/profileHelper.js';
+import { resolveFacultyUser, getFacultyForUser } from '../helpers/profileHelper.js';
 import { generateToken, generateResetToken } from '../utils/generateToken.js';
 import { sendWelcomeEmail, sendPasswordResetEmail } from '../utils/sendEmail.js';
 import { asyncHandler } from '../middleware/errorMiddleware.js';
@@ -210,7 +210,7 @@ export const getMe = asyncHandler(async (req, res) => {
 	const payload = formatUser(req.user);
 
 	if (req.user.role === 'faculty') {
-		const faculty = await Faculty.findOne({ user: req.user._id });
+		const faculty = await getFacultyForUser(req.user._id);
 		if (faculty) {
 			payload.faculty = {
 				_id: faculty._id,

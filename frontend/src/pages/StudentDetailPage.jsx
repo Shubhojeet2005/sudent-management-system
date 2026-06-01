@@ -1,17 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
+import { useToast } from '../hooks/useToast.js';
 import { getStudent } from '../services/studentService.js';
 
 export default function StudentDetailPage() {
 	const { id } = useParams();
 	const { token } = useAuth();
+	const { toast } = useToast();
 	const [student, setStudent] = useState(null);
+	const [error, setError] = useState(null);
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
+		setLoading(true);
+		setError(null);
 		getStudent(id, token)
 			.then(setStudent)
+			.catch((e) => {
+				setError(e.message);
+				setStudent(null);
+				toast(e.message, 'error');
+			})
 			.finally(() => setLoading(false));
 	}, [id, token]);
 
@@ -23,7 +33,16 @@ export default function StudentDetailPage() {
 		);
 	}
 
-	if (!student) return <p>Student not found</p>;
+	if (!student) {
+		return (
+			<div className="card card-padded">
+				<Link to="/students">← Students</Link>
+				<p style={{ marginTop: '1rem', color: 'var(--text-muted)' }}>
+					{error || 'Student not found'}
+				</p>
+			</div>
+		);
+	}
 
 	return (
 		<>

@@ -1,4 +1,5 @@
 import Course from '../models/Course.js';
+import Student from '../models/Student.js';
 
 /** Branches on the Student model (subset of faculty departments) */
 export const STUDENT_BRANCHES = [
@@ -10,30 +11,6 @@ export const STUDENT_BRANCHES = [
 	'Civil Engineering',
 	'Chemical Engineering',
 ];
-
-/**
- * Whether a faculty member may view/manage this student.
- * - Students enrolled in the faculty member's courses, or
- * - Students in the same branch when department is a teaching branch, or
- * - All students when department is not a teaching branch (e.g. Mathematics) and no course enrollments yet
- */
-export const canFacultyAccessStudent = async (facultyProfile, student) => {
-	if (!facultyProfile || !student) return false;
-
-	const enrolledInMyCourse = await Course.exists({
-		faculty: facultyProfile._id,
-		isActive: true,
-		enrolledStudents: student._id,
-	});
-	if (enrolledInMyCourse) return true;
-
-	if (STUDENT_BRANCHES.includes(facultyProfile.department)) {
-		return student.branch === facultyProfile.department;
-	}
-
-	// Science / humanities faculty — allow access until courses define enrollment
-	return true;
-};
 
 /** Extra MongoDB filter for faculty listing students */
 export const buildFacultyStudentQuery = async (facultyProfile) => {
@@ -56,9 +33,24 @@ export const buildFacultyStudentQuery = async (facultyProfile) => {
 	}
 
 	if (or.length === 0) {
-		// New faculty or non-branch department: list all active students
 		return null;
 	}
 
 	return { $or: or };
+};
+
+/** Same rules as student list — if they can see a row, they can open details */
+export const facultyCanViewStudent = async (facultyProfile, studentId) => {
+	const base = { _id: studentId, isActive: { $ne: false } };
+
+	if (!facultyProfile) {
+		return Student.exists(base);
+	}
+
+	const scope = await buildFacultyStudentQuery(facultyProfile);
+	if (!scope) {
+		return Student.exists(base);
+	}
+
+	return Student.exists({ ...base, ...scope });
 };

@@ -4,7 +4,37 @@ import Faculty from '../models/Faculty.js';
 import User from '../models/User.js';
 
 export const getStudentByUser = (userId) => Student.findOne({ user: userId });
-export const getFacultyByUser = (userId) => Faculty.findOne({ user: userId });
+
+/** Find faculty profile for logged-in user; auto-relink if user was created on first login */
+export const getFacultyForUser = async (userId) => {
+	let faculty = await Faculty.findOne({ user: userId });
+	if (faculty) return faculty;
+
+	const user = await User.findById(userId).select('email name');
+	if (!user) return null;
+
+	if (user.email) {
+		const email = user.email.toLowerCase().trim();
+		faculty = await Faculty.findOne({ email });
+		if (!faculty) {
+			const slug = email.split('@')[0].replace(/[^a-z0-9]/g, '');
+			const candidates = await Faculty.find({ isActive: true });
+			faculty = candidates.find(
+				(f) => f.employeeId.toLowerCase().replace(/[^a-z0-9]/g, '') === slug
+			);
+		}
+		if (faculty) {
+			faculty.user = userId;
+			await faculty.save();
+			return faculty;
+		}
+	}
+
+	return null;
+};
+
+/** @deprecated use getFacultyForUser */
+export const getFacultyByUser = getFacultyForUser;
 
 /**
  * Ensure a faculties row has a valid users account for JWT auth.
