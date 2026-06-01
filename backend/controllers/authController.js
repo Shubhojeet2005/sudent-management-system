@@ -1,5 +1,8 @@
 import crypto from 'crypto';
 import User from '../models/User.js';
+import Faculty from '../models/Faculty.js';
+import Student from '../models/Student.js';
+import { pickStudentProfile, validateStudentProfile } from '../helpers/studentValidation.js';
 import { generateToken, generateResetToken } from '../utils/generateToken.js';
 import { sendWelcomeEmail, sendPasswordResetEmail } from '../utils/sendEmail.js';
 import { asyncHandler } from '../middleware/errorMiddleware.js';
@@ -53,6 +56,89 @@ export const registerUser = asyncHandler(async (req, res) => {
 	sendSuccess(res, 201, tokenResponse(user), 'Registration successful');
 });
 
+/** Public (or admin) registration: user account + student profile in one step */
+export const registerStudent = asyncHandler(async (req, res) => {
+	const { name, email, password, phone, profilePhoto } = req.body;
+	const profile = pickStudentProfile(req.body);
+	const errors = validateStudentProfile(profile);
+
+	if (!name || !email || !password) {
+		errors.push('Name, email, and password are required');
+	}
+	if (password && password.length < 6) {
+		errors.push('Password must be at least 6 characters');
+	}
+	if (errors.length) {
+		res.status(400);
+		throw new Error(errors.join('. '));
+	}
+
+	const existingUser = await User.findOne({ email });
+	if (existingUser) {
+		res.status(400);
+		throw new Error('User already exists with this email');
+	}
+
+	const existingEnrollment = await Student.findOne({ enrollmentNo: profile.enrollmentNo });
+	if (existingEnrollment) {
+		res.status(400);
+		throw new Error('Enrollment number is already registered');
+	}
+
+	const user = await User.create({
+		name,
+		email,
+		password,
+		phone,
+		profilePhoto,
+		role: 'student',
+	});
+
+	let student;
+	try {
+		student = await Student.create({ user: user._id, ...profile });
+	} catch (err) {
+		await User.findByIdAndDelete(user._id);
+		throw err;
+	}
+
+	try {
+		await sendWelcomeEmail(user);
+	} catch {
+		/* optional */
+	}
+
+	const studentSummary = {
+		_id: student._id,
+		enrollmentNo: student.enrollmentNo,
+		rollNo: student.rollNo,
+		branch: student.branch,
+		programme: student.programme,
+		semester: student.semester,
+		batch: student.batch,
+		section: student.section,
+		admissionYear: student.admissionYear,
+	};
+
+	const isAdmin = req.user?.role === 'admin';
+	if (isAdmin) {
+		sendSuccess(
+			res,
+			201,
+			{ user: formatUser(user), student: studentSummary },
+			'Student registered successfully'
+		);
+		return;
+	}
+
+	sendSuccess(
+		res,
+		201,
+		{ ...tokenResponse(user), student: studentSummary },
+		'Registration successful'
+	);
+});
+
 export const loginUser = asyncHandler(async (req, res) => {
 	const { email, password } = req.body;
 
@@ -78,8 +164,97 @@ export const loginUser = asyncHandler(async (req, res) => {
 	sendSuccess(res, 200, tokenResponse(user), 'Login successful');
 });
 
+/** Faculty login: employeeId + department (used as credentials) */
+export const loginFaculty = asyncHandler(async (req, res) => {
+	const { employeeId, department } = req.body;
+
+	if (!employeeId || !department) {
+		res.status(400);
+		throw new Error('Employee ID and department are required');
+	}
+
+	const faculty = await Faculty.findOne({
+		employeeId: employeeId.trim().toUpperCase(),
+		isActive: true,
+	});
+
+	if (!faculty || faculty.department !== department.trim()) {
+		res.status(401);
+		throw new Error('Invalid employee ID or department');
+	}
+
+	const user = await User.findById(faculty.user);
+	if (!user) {
+		res.status(401);
+		throw new Error(
+			'Faculty profile exists but has no linked user account. In the backend folder run: npm run seed'
+		);
+	}
+	if (user.role !== 'faculty') {
+		res.status(401);
+		throw new Error(
+			`Linked user has role "${user.role}" (expected faculty). Run "npm run seed" in the backend folder to repair.`
+		);
+	}
+
+	if (!user.isActive) {
+		res.status(403);
+		throw new Error('Account is deactivated');
+	}
+
+	user.lastLogin = new Date();
+	await user.save();
+
+	sendSuccess(
+		res,
+		200,
+		{
+			...tokenResponse(user),
+			faculty: {
+				_id: faculty._id,
+				employeeId: faculty.employeeId,
+				department: faculty.department,
+				designation: faculty.designation,
+			},
+		},
+		'Faculty login successful'
+	);
+});
+
 export const getMe = asyncHandler(async (req, res) => {
-	sendSuccess(res, 200, formatUser(req.user));
+	const payload = formatUser(req.user);
+
+	if (req.user.role === 'faculty') {
+		const faculty = await Faculty.findOne({ user: req.user._id });
+		if (faculty) {
+			payload.faculty = {
+				_id: faculty._id,
+				employeeId: faculty.employeeId,
+				department: faculty.department,
+				designation: faculty.designation,
+			};
+		}
+	}
+
+	if (req.user.role === 'student') {
+		const student = await Student.findOne({ user: req.user._id });
+		if (student) {
+			payload.student = {
+				_id: student._id,
+				enrollmentNo: student.enrollmentNo,
+				rollNo: student.rollNo,
+				branch: student.branch,
+				programme: student.programme,
+				semester: student.semester,
+				batch: student.batch,
+				section: student.section,
+				admissionYear: student.admissionYear,
+				cgpa: student.cgpa,
+			};
+		}
+	}
+
+	sendSuccess(res, 200, payload);
 });
 
 export const updateProfile = asyncHandler(async (req, res) => {

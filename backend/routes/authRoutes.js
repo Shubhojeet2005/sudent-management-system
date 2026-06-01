@@ -1,7 +1,9 @@
 import express from 'express';
 import {
 	registerUser,
+	registerStudent,
 	loginUser,
+	loginFaculty,
 	getMe,
 	updateProfile,
 	updatePassword,
@@ -16,7 +18,9 @@ import { authLimiter } from '../middleware/rateLimiter.js';
 const router = express.Router();
 
 router.post('/register', authLimiter, optionalProtect, registerUser);
+router.post('/register/student', authLimiter, optionalProtect, registerStudent);
 router.post('/login', authLimiter, loginUser);
+router.post('/login/faculty', authLimiter, loginFaculty);
 router.post('/forgot-password', authLimiter, forgotPassword);
 router.post('/reset-password', authLimiter, resetPassword);
 

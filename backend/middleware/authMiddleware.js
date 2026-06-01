@@ -5,8 +5,11 @@ import { asyncHandler } from './errorMiddleware.js';
 export const protect = asyncHandler(async (req, res, next) => {
 	let token;
 
-	if (req.headers.authorization?.startsWith('Bearer')) {
-		token = req.headers.authorization.split(' ')[1];
+	const authHeader = req.headers.authorization;
+	if (authHeader?.startsWith('Bearer ')) {
+		token = authHeader.slice(7).trim();
+	} else if (authHeader?.startsWith('Bearer')) {
+		token = authHeader.split(' ')[1]?.trim();
 	}
 
 	if (!token) {

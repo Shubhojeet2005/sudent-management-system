@@ -9,6 +9,26 @@ const populateOpts = [
 	{ path: 'enrolledStudents', select: 'enrollmentNo rollNo branch semester' },
 ];
 
+/** Strip invalid faculty id; assign logged-in faculty profile when role is faculty */
+const prepareCourseBody = async (req, body) => {
+	const data = { ...body };
+
+	if (!data.faculty || data.faculty === '') {
+		delete data.faculty;
+	}
+
+	if (req.user.role === 'faculty') {
+		const profile = await getFacultyByUser(req.user._id);
+		if (!profile) {
+			res.status(400);
+			throw new Error('Faculty profile not found for this account');
+		}
+		data.faculty = profile._id;
+	}
+
+	return data;
+};
+
 export const courseList = asyncHandler(async (req, res) => {
 	const { page, limit, skip } = getPagination(req.query);
 	const filter = { isActive: true };
@@ -40,13 +60,15 @@ export const getCourse = asyncHandler(async (req, res) => {
 });
 
 export const createCourse = asyncHandler(async (req, res) => {
-	const course = await Course.create(req.body);
+	const data = await prepareCourseBody(req, req.body);
+	const course = await Course.create(data);
 	await course.populate(populateOpts);
 	sendSuccess(res, 201, course, 'Course created');
 });
 
 export const updateCourse = asyncHandler(async (req, res) => {
-	const course = await Course.findByIdAndUpdate(req.params.id, req.body, {
+	const data = await prepareCourseBody(req, req.body);
+	const course = await Course.findByIdAndUpdate(req.params.id, data, {
 		new: true,
 		runValidators: true,
 	}).populate(populateOpts);

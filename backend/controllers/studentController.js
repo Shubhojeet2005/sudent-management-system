@@ -2,7 +2,8 @@ import Student from '../models/Student.js';
 import { asyncHandler } from '../middleware/errorMiddleware.js';
 import { sendSuccess, sendPaginated } from '../utils/apiResponse.js';
 import { getPagination, buildPaginationMeta } from '../utils/pagination.js';
-import { getStudentByUser } from '../helpers/profileHelper.js';
+import { getStudentByUser, getFacultyByUser } from '../helpers/profileHelper.js';
+import { pickStudentProfile, validateStudentProfile } from '../helpers/studentValidation.js';
 
 const populateOpts = [
 	{ path: 'user', select: 'name email phone profilePhoto role' },
@@ -11,7 +12,7 @@ const populateOpts = [
 
 export const studentList = asyncHandler(async (req, res) => {
 	const { page, limit, skip } = getPagination(req.query);
-	const filter = {};
+	const filter = { isActive: true };
 
 	if (req.query.branch) filter.branch = req.query.branch;
 	if (req.query.semester) filter.semester = Number(req.query.semester);
@@ -20,6 +21,14 @@ export const studentList = asyncHandler(async (req, res) => {
 			{ enrollmentNo: { $regex: req.query.search, $options: 'i' } },
 			{ rollNo: { $regex: req.query.search, $options: 'i' } },
 		];
+	}
+
+	// Faculty see students in their department (branch matches faculty department)
+	if (req.user.role === 'faculty' && !req.query.branch) {
+		const profile = await getFacultyByUser(req.user._id);
+		if (profile?.department) {
+			filter.branch = profile.department;
+		}
 	}
 
 	const [students, total] = await Promise.all([
@@ -45,6 +54,14 @@ export const getStudent = asyncHandler(async (req, res) => {
 		}
 	}
 
+	if (req.user.role === 'faculty') {
+		const profile = await getFacultyByUser(req.user._id);
+		if (profile?.department && student.branch !== profile.department) {
+			res.status(403);
+			throw new Error('Not authorized to view students outside your department');
+		}
+	}
+
 	sendSuccess(res, 200, student);
 });
 
@@ -59,7 +76,26 @@ export const getMyStudentProfile = asyncHandler(async (req, res) => {
 });
 
 export const createStudent = asyncHandler(async (req, res) => {
-	const student = await Student.create(req.body);
+	const { user: userId } = req.body;
+	if (!userId) {
+		res.status(400);
+		throw new Error('User id is required to link student profile');
+	}
+
+	const profile = pickStudentProfile(req.body);
+	const errors = validateStudentProfile(profile);
+	if (errors.length) {
+		res.status(400);
+		throw new Error(errors.join('. '));
+	}
+
+	const existingEnrollment = await Student.findOne({ enrollmentNo: profile.enrollmentNo });
+	if (existingEnrollment) {
+		res.status(400);
+		throw new Error('Enrollment number is already registered');
+	}
+
+	const student = await Student.create({ user: userId, ...profile });
 	await student.populate(populateOpts);
 	sendSuccess(res, 201, student, 'Student created');
 });

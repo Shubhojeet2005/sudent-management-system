@@ -86,6 +86,19 @@ const startServer = async () => {
 			socket.on('disconnect', () => {});
 		});
 
+		server.on('error', (err) => {
+			if (err.code === 'EADDRINUSE') {
+				console.error(`\nPort ${PORT} is already in use. Another server is still running.`);
+				console.error('Fix: run "npm run stop" in the backend folder, then "npm start" again.\n');
+				console.error(
+					'Or in PowerShell: Get-NetTCPConnection -LocalPort 5001 | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }'
+				);
+			} else {
+				console.error('Server error:', err);
+			}
+			process.exit(1);
+		});
+
 		server.listen(PORT, () => {
 			console.log(`API: http://localhost:${PORT}/api`);
 			console.log(`Health: http://localhost:${PORT}/api/health`);

@@ -7,7 +7,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "stop": "powershell -NoProfile -Command \"Get-NetTCPConnection -LocalPort 5001 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; Write-Host 'Port 5001 cleared.'\"",
+    "seed": "node scripts/seedDemo.js"
   },
   "engines": {
     "node": ">=18.0.0"
