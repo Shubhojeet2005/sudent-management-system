@@ -1,6 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import mongoose from 'mongoose';
@@ -18,8 +17,6 @@ import courseRoutes from './routes/courseRoutes.js';
 import resultRoutes from './routes/resultRoutes.js';
 import noticeRoutes from './routes/noticeRoutes.js';
 import attendanceRoutes from './routes/attendanceRoutes.js';
-
-dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

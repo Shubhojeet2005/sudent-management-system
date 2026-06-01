@@ -26,8 +26,14 @@ const startServer = async () => {
 
 		server.on('error', (err) => {
 			if (err.code === 'EADDRINUSE') {
-				console.error(`\nPort ${PORT} is already in use. Another server is still running.`);
-				console.error('Fix: run "npm run stop" in the backend folder, then "npm start" again.\n');
+				console.error(`\nPort ${PORT} is already in use.`);
+				if (PORT === 3000) {
+					console.error(
+						'Your shell may have PORT=3000 set (frontend port). Use backend/.env with PORT=5001 or run: npm run stop && npm start\n'
+					);
+				} else {
+					console.error('Fix: run "npm run stop" in the backend folder, then "npm start" again.\n');
+				}
 			} else {
 				console.error('Server error:', err);
 			}

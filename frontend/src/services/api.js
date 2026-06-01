@@ -1,4 +1,10 @@
-const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+/** Empty in dev = same-origin + Vite proxy → backend :5001 */
+const BASE =
+	import.meta.env.VITE_API_URL && String(import.meta.env.VITE_API_URL).trim() !== ''
+		? String(import.meta.env.VITE_API_URL).replace(/\/$/, '')
+		: import.meta.env.DEV
+			? ''
+			: 'http://localhost:5001';
 
 export const getStoredToken = () => {
 	const t = localStorage.getItem('token');
@@ -28,7 +34,14 @@ export async function request(path, { method = 'GET', body, token, headers = {} 
 		opts.headers.Authorization = `Bearer ${authToken}`;
 	}
 
-	const res = await fetch(`${BASE}${path}`, opts);
+	let res;
+	try {
+		res = await fetch(`${BASE}${path}`, opts);
+	} catch {
+		throw new Error(
+			'Cannot reach the API server. Open a terminal, run: cd backend && npm start — then try again.'
+		);
+	}
 	const ct = res.headers.get('content-type');
 	const data = ct?.includes('application/json') ? await res.json() : null;
 

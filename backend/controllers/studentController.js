@@ -4,6 +4,7 @@ import { sendSuccess, sendPaginated } from '../utils/apiResponse.js';
 import { getPagination, buildPaginationMeta } from '../utils/pagination.js';
 import { getStudentByUser, getFacultyByUser } from '../helpers/profileHelper.js';
 import { pickStudentProfile, validateStudentProfile } from '../helpers/studentValidation.js';
+import { buildFacultyStudentQuery, canFacultyAccessStudent } from '../helpers/facultyStudents.js';
 
 const populateOpts = [
 	{ path: 'user', select: 'name email phone profilePhoto role' },
@@ -12,23 +13,32 @@ const populateOpts = [
 
 export const studentList = asyncHandler(async (req, res) => {
 	const { page, limit, skip } = getPagination(req.query);
-	const filter = { isActive: true };
+	const filter = { isActive: { $ne: false } };
 
 	if (req.query.branch) filter.branch = req.query.branch;
 	if (req.query.semester) filter.semester = Number(req.query.semester);
+
+	let searchOr;
 	if (req.query.search) {
-		filter.$or = [
+		searchOr = [
 			{ enrollmentNo: { $regex: req.query.search, $options: 'i' } },
 			{ rollNo: { $regex: req.query.search, $options: 'i' } },
 		];
 	}
 
-	// Faculty see students in their department (branch matches faculty department)
 	if (req.user.role === 'faculty' && !req.query.branch) {
 		const profile = await getFacultyByUser(req.user._id);
-		if (profile?.department) {
-			filter.branch = profile.department;
+		const facultyScope = await buildFacultyStudentQuery(profile);
+		if (facultyScope) {
+			filter.$and = [{ ...(searchOr ? { $or: searchOr } : {}) }, facultyScope].filter(
+				(c) => Object.keys(c).length > 0
+			);
+			if (filter.$and.length === 0) delete filter.$and;
+		} else if (searchOr) {
+			filter.$or = searchOr;
 		}
+	} else if (searchOr) {
+		filter.$or = searchOr;
 	}
 
 	const [students, total] = await Promise.all([
@@ -56,9 +66,10 @@ export const getStudent = asyncHandler(async (req, res) => {
 
 	if (req.user.role === 'faculty') {
 		const profile = await getFacultyByUser(req.user._id);
-		if (profile?.department && student.branch !== profile.department) {
+		const allowed = await canFacultyAccessStudent(profile, student);
+		if (!allowed) {
 			res.status(403);
-			throw new Error('Not authorized to view students outside your department');
+			throw new Error('Not authorized to view this student');
 		}
 	}
 

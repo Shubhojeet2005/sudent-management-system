@@ -11,7 +11,7 @@ import StudentRegistrationForm, {
 } from '../components/StudentRegistrationForm.jsx';
 
 export default function StudentsPage() {
-	const { token, isAdmin, registerStudent } = useAuth();
+	const { token, isAdmin, isFaculty, user, registerStudent } = useAuth();
 	const { toast } = useToast();
 	const [items, setItems] = useState([]);
 	const [search, setSearch] = useState('');
@@ -113,7 +113,16 @@ export default function StudentsPage() {
 							{!loading && items.length === 0 && (
 								<tr>
 									<td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>
-										No students found. Ask an admin to add students, or run <code>npm run seed</code> in the backend folder.
+										{isFaculty ? (
+											<>
+												No students in your scope. Students appear when their{' '}
+												<strong>branch</strong> matches your department (
+												{user?.faculty?.department || '—'}) or they are enrolled in your courses.
+												Ask admin to register students in your branch.
+											</>
+										) : (
+											<>No students found. Add students from this page or the public register link.</>
+										)}
 									</td>
 								</tr>
 							)}
