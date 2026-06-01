@@ -5,7 +5,23 @@ const facultySchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      default: null,
+    },
+    name: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    email: {
+      type: String,
+      lowercase: true,
+      trim: true,
+      default: "",
+    },
+    phone: {
+      type: String,
+      trim: true,
+      default: "",
     },
     employeeId: {
       type: String,

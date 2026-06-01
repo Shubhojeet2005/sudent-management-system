@@ -1,4 +1,5 @@
 import Faculty from '../models/Faculty.js';
+import { resolveFacultyUser } from '../helpers/profileHelper.js';
 import { asyncHandler } from '../middleware/errorMiddleware.js';
 import { sendSuccess, sendPaginated } from '../utils/apiResponse.js';
 import { getPagination, buildPaginationMeta } from '../utils/pagination.js';
@@ -35,7 +36,9 @@ export const getFaculty = asyncHandler(async (req, res) => {
 });
 
 export const createFaculty = asyncHandler(async (req, res) => {
-	const faculty = await Faculty.create(req.body);
+	const { name, email, phone, ...rest } = req.body;
+	const faculty = await Faculty.create({ name, email, phone, ...rest });
+	await resolveFacultyUser(faculty);
 	await faculty.populate(populateOpts);
 	sendSuccess(res, 201, faculty, 'Faculty created');
 });

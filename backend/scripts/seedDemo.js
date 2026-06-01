@@ -5,7 +5,6 @@
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import User from '../models/User.js';
-import Faculty from '../models/Faculty.js';
 import Student from '../models/Student.js';
 
 dotenv.config();
@@ -29,14 +28,7 @@ const DEMO_STUDENTS = [
 	},
 ];
 
-const FACULTY = {
-	employeeId: 'MMMUT-FAC-001',
-	department: 'Computer Science & Engineering',
-	email: 'faculty@mmmut.ac.in',
-	password: 'faculty123',
-	name: 'Dr. Demo Faculty',
-	designation: 'Associate Professor',
-};
+const DEFAULT_BRANCH = 'Computer Science & Engineering';
 
 const ADMIN = {
 	email: 'admin@mmmut.ac.in',
@@ -63,59 +55,10 @@ async function seed() {
 		console.log('Admin already exists:', ADMIN.email);
 	}
 
-	// Faculty user (required for faculty login)
-	let facultyUser = await User.findOne({ email: FACULTY.email });
-	if (!facultyUser) {
-		facultyUser = await User.create({
-			name: FACULTY.name,
-			email: FACULTY.email,
-			password: FACULTY.password,
-			role: 'faculty',
-			phone: '9876543210',
-		});
-		console.log('Created faculty user:', FACULTY.email);
-	} else {
-		facultyUser.role = 'faculty';
-		facultyUser.isActive = true;
-		await facultyUser.save();
-		console.log('Faculty user exists:', FACULTY.email, '→ role set to faculty');
-	}
+	console.log('\nFaculty login: use Employee ID + Department from your faculties collection.');
+	console.log('(No demo faculty is created by this seed script.)\n');
 
-	// Faculty profile — link ANY existing MMMUT-FAC-001 to this user
-	let faculty = await Faculty.findOne({ employeeId: FACULTY.employeeId });
-	if (!faculty) {
-		faculty = await Faculty.create({
-			user: facultyUser._id,
-			employeeId: FACULTY.employeeId,
-			department: FACULTY.department,
-			designation: FACULTY.designation,
-			qualification: 'Ph.D.',
-			experience: 8,
-			isActive: true,
-		});
-		console.log('Created faculty profile:', FACULTY.employeeId);
-	} else {
-		faculty.user = facultyUser._id;
-		faculty.department = FACULTY.department;
-		faculty.isActive = true;
-		await faculty.save();
-		console.log('Updated faculty profile:', FACULTY.employeeId, '→ linked to user', facultyUser._id.toString());
-	}
-
-	// Verify link
-	const check = await Faculty.findOne({ employeeId: FACULTY.employeeId }).populate('user');
-	if (!check?.user || check.user.role !== 'faculty') {
-		console.error('ERROR: Faculty user link failed verification');
-	} else {
-		console.log('\n--- Faculty login (Faculty tab on /login) ---');
-		console.log('Employee ID:', FACULTY.employeeId);
-		console.log('Department: ', FACULTY.department);
-		console.log('\n--- Optional email login for same faculty ---');
-		console.log('Email:   ', FACULTY.email);
-		console.log('Password:', FACULTY.password);
-	}
-
-	console.log('\n--- Admin login (Student/Admin tab) ---');
+	console.log('--- Admin login (Student/Admin tab) ---');
 	console.log('Email:   ', ADMIN.email);
 	console.log('Password:', ADMIN.password);
 
@@ -138,7 +81,7 @@ async function seed() {
 				user: user._id,
 				enrollmentNo: s.enrollmentNo,
 				rollNo: s.rollNo,
-				branch: FACULTY.department,
+				branch: DEFAULT_BRANCH,
 				programme: 'B.Tech',
 				semester: s.semester,
 				batch: '2024-2028',
@@ -149,7 +92,7 @@ async function seed() {
 			});
 			console.log('Created student profile:', s.enrollmentNo);
 		} else {
-			student.branch = FACULTY.department;
+			student.branch = DEFAULT_BRANCH;
 			student.isActive = true;
 			await student.save();
 			console.log('Student profile exists:', s.enrollmentNo);

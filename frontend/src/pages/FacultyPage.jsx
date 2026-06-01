@@ -40,6 +40,8 @@ export default function FacultyPage() {
 			await createFaculty(
 				{
 					user: user._id,
+					name: form.userName,
+					email: form.userEmail,
 					employeeId: form.employeeId,
 					department: form.department,
 					designation: form.designation,
@@ -82,7 +84,7 @@ export default function FacultyPage() {
 					<tbody>
 						{items.map((f) => (
 							<tr key={f._id}>
-								<td>{f.user?.name}</td>
+								<td>{f.name || f.user?.name || '—'}</td>
 								<td>{f.employeeId}</td>
 								<td style={{ fontSize: '0.8rem' }}>{f.department}</td>
 								<td>{f.designation}</td>

@@ -3,6 +3,7 @@ import User from '../models/User.js';
 import Faculty from '../models/Faculty.js';
 import Student from '../models/Student.js';
 import { pickStudentProfile, validateStudentProfile } from '../helpers/studentValidation.js';
+import { resolveFacultyUser } from '../helpers/profileHelper.js';
 import { generateToken, generateResetToken } from '../utils/generateToken.js';
 import { sendWelcomeEmail, sendPasswordResetEmail } from '../utils/sendEmail.js';
 import { asyncHandler } from '../middleware/errorMiddleware.js';
@@ -183,24 +184,7 @@ export const loginFaculty = asyncHandler(async (req, res) => {
 		throw new Error('Invalid employee ID or department');
 	}
 
-	const user = await User.findById(faculty.user);
-	if (!user) {
-		res.status(401);
-		throw new Error(
-			'Faculty profile exists but has no linked user account. In the backend folder run: npm run seed'
-		);
-	}
-	if (user.role !== 'faculty') {
-		res.status(401);
-		throw new Error(
-			`Linked user has role "${user.role}" (expected faculty). Run "npm run seed" in the backend folder to repair.`
-		);
-	}
-
-	if (!user.isActive) {
-		res.status(403);
-		throw new Error('Account is deactivated');
-	}
+	const user = await resolveFacultyUser(faculty);
 
 	user.lastLogin = new Date();
 	await user.save();
@@ -215,6 +199,7 @@ export const loginFaculty = asyncHandler(async (req, res) => {
 				employeeId: faculty.employeeId,
 				department: faculty.department,
 				designation: faculty.designation,
+				name: faculty.name || user.name,
 			},
 		},
 		'Faculty login successful'
@@ -232,6 +217,7 @@ export const getMe = asyncHandler(async (req, res) => {
 				employeeId: faculty.employeeId,
 				department: faculty.department,
 				designation: faculty.designation,
+				name: faculty.name || req.user.name,
 			};
 		}
 	}
