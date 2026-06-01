@@ -16,5 +16,9 @@
  "DATABASE_URL": "@database_url",
  "API_KEY": "@api_key"
  }
+<<<<<<< HEAD
 
 }
+=======
+}
+>>>>>>> 812ee15c47b4783e08278f8038f94bb7f5e62a48
