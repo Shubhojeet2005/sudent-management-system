@@ -52,7 +52,11 @@ export async function request(path, { method = 'GET', body, token, headers = {} 
 	}
 
 	if (!res.ok) {
-		throw new Error(data?.message || res.statusText || 'Request failed');
+		const msg =
+			data?.message ||
+			(res.status === 500 ? 'Server error — restart backend (npm run stop && npm start) and try again' : res.statusText) ||
+			'Request failed';
+		throw new Error(msg);
 	}
 
 	if (data && data.success === false) {

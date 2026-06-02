@@ -44,6 +44,10 @@ export const errorHandler = (err, req, res, next) => {
 		statusCode = 400;
 	}
 
+	if (err.message?.includes('CORS')) {
+		statusCode = 403;
+	}
+
 	res.status(statusCode).json({
 		success: false,
 		message,

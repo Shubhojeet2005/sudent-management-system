@@ -6,12 +6,14 @@
  */
 export function getApiBase() {
 	const fromEnv = import.meta.env.VITE_API_URL?.trim();
-	if (fromEnv) {
-		return fromEnv.replace(/\/$/, '');
-	}
 
+	// Local dev: always use same-origin + Vite proxy (avoids CORS on :3000, :3002, etc.)
 	if (import.meta.env.DEV) {
 		return '';
+	}
+
+	if (fromEnv) {
+		return fromEnv.replace(/\/$/, '');
 	}
 
 	if (typeof window !== 'undefined') {

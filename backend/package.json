@@ -10,7 +10,7 @@
     "vercel-build": "node --check app.js && node --check index.js",
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "stop": "powershell -NoProfile -Command \"Get-NetTCPConnection -LocalPort 5001 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; Write-Host 'Port 5001 cleared.'\"",
+    "stop": "powershell -NoProfile -Command \"$ports=5001,5000; foreach($p in $ports){ Get-NetTCPConnection -LocalPort $p -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue } }; Write-Host 'Ports 5001/5000 cleared.'\"",
     "seed": "node scripts/seedDemo.js"
   },
   "engines": {

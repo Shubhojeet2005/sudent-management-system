@@ -184,10 +184,16 @@ export const loginFaculty = asyncHandler(async (req, res) => {
 		throw new Error('Invalid employee ID or department');
 	}
 
-	const user = await resolveFacultyUser(faculty);
+	let user;
+	try {
+		user = await resolveFacultyUser(faculty);
+	} catch (err) {
+		res.status(500);
+		throw new Error(err.message || 'Could not link faculty account');
+	}
 
 	user.lastLogin = new Date();
-	await user.save();
+	await user.save({ validateBeforeSave: true });
 
 	sendSuccess(
 		res,

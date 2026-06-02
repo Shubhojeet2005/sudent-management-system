@@ -29,12 +29,18 @@ app.use(
 			if (!origin) return callback(null, true);
 			if (env.corsOrigins.includes(origin)) return callback(null, true);
 			try {
-				const host = new URL(origin).hostname;
-				if (host.endsWith('.vercel.app')) return callback(null, true);
+				const { hostname, protocol } = new URL(origin);
+				if (env.nodeEnv === 'development' && (hostname === 'localhost' || hostname === '127.0.0.1')) {
+					return callback(null, true);
+				}
+				if (hostname.endsWith('.vercel.app')) return callback(null, true);
+				if (protocol === 'https:' && hostname.endsWith('.vercel.app')) {
+					return callback(null, true);
+				}
 			} catch {
 				/* ignore */
 			}
-			callback(new Error(`CORS blocked for origin: ${origin}`));
+			callback(null, false);
 		},
 		credentials: true,
 	})
