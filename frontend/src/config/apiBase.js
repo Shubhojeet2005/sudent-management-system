@@ -15,7 +15,7 @@ export function getApiBase() {
 	}
 
 	if (typeof window !== 'undefined') {
-		return `${window.location.origin}/_/backend`;
+		return window.location.origin;
 	}
 
 	return '';

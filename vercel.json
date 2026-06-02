@@ -1,14 +1,17 @@
 {
-	"experimentalServices": {
-		"frontend": {
-			"root": "frontend",
-			"routePrefix": "/",
-			"framework": "vite"
-		},
-		"backend": {
-			"root": "backend",
-			"routePrefix": "/_/backend",
-			"framework": "express"
+	"$schema": "https://openapi.vercel.sh/vercel.json",
+	"installCommand": "npm install --prefix frontend && npm install --prefix backend",
+	"buildCommand": "npm run build --prefix frontend",
+	"outputDirectory": "frontend/dist",
+	"framework": null,
+	"rewrites": [
+		{ "source": "/api/(.*)", "destination": "/api" },
+		{ "source": "/uploads/(.*)", "destination": "/api" },
+		{ "source": "/(.*)", "destination": "/index.html" }
+	],
+	"functions": {
+		"api/index.js": {
+			"maxDuration": 30
 		}
 	}
 }
