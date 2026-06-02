@@ -6,6 +6,8 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
+    "build": "node --check app.js && node --check index.js",
+    "vercel-build": "node --check app.js && node --check index.js",
     "start": "node server.js",
     "dev": "node --watch server.js",
     "stop": "powershell -NoProfile -Command \"Get-NetTCPConnection -LocalPort 5001 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; Write-Host 'Port 5001 cleared.'\"",
