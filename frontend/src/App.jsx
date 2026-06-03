@@ -20,6 +20,7 @@ import AttendancePage from './pages/AttendancePage.jsx';
 import ResultsPage from './pages/ResultsPage.jsx';
 import NoticesPage from './pages/NoticesPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
+import QuizzesPage from './pages/QuizzesPage.jsx';
 
 export default function App() {
 	return (
@@ -65,6 +66,7 @@ export default function App() {
 					<Route path="/courses" element={<ProtectedRoute><CoursesPage /></ProtectedRoute>} />
 					<Route path="/attendance" element={<ProtectedRoute><AttendancePage /></ProtectedRoute>} />
 					<Route path="/results" element={<ProtectedRoute><ResultsPage /></ProtectedRoute>} />
+					<Route path="/quizzes" element={<ProtectedRoute><QuizzesPage /></ProtectedRoute>} />
 					<Route path="/notices" element={<ProtectedRoute><NoticesPage /></ProtectedRoute>} />
 					<Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 

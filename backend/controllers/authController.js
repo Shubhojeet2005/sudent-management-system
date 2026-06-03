@@ -340,7 +340,9 @@ export const uploadProfilePhoto = asyncHandler(async (req, res) => {
 	}
 
 	const { fileUrl } = await import('../middleware/uploadMiddleware.js');
-	const photoUrl = fileUrl(req, 'profiles', req.file.filename);
+	const photoUrl = req.file.filename
+		? fileUrl(req, 'profiles', req.file.filename)
+		: `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
 
 	const user = await User.findByIdAndUpdate(
 		req.user._id,

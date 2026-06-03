@@ -17,6 +17,7 @@ import courseRoutes from './routes/courseRoutes.js';
 import resultRoutes from './routes/resultRoutes.js';
 import noticeRoutes from './routes/noticeRoutes.js';
 import attendanceRoutes from './routes/attendanceRoutes.js';
+import quizRoutes from './routes/quizRoutes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -92,6 +93,7 @@ app.use('/api/courses', courseRoutes);
 app.use('/api/results', resultRoutes);
 app.use('/api/notices', noticeRoutes);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/quizzes', quizRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

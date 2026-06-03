@@ -6,6 +6,7 @@ import {
 	GraduationCap,
 	BookOpen,
 	ClipboardCheck,
+	ClipboardList,
 	Award,
 	Megaphone,
 	User,
@@ -99,6 +100,10 @@ export default function DashboardLayout({ children }) {
 
 					<NavItem to="/results" icon={Award}>
 						Results
+					</NavItem>
+
+					<NavItem to="/quizzes" icon={ClipboardList}>
+						Quizzes
 					</NavItem>
 
 					<NavItem to="/notices" icon={Megaphone}>

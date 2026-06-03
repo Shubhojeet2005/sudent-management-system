@@ -11,12 +11,15 @@ import {
 } from '../services/resultService.js';
 import { listStudents } from '../services/studentService.js';
 import { listCourses } from '../services/courseService.js';
+import { listMyAttempts } from '../services/quizService.js';
 import Modal from '../components/Modal.jsx';
 
 export default function ResultsPage() {
-	const { token, isAdmin, isFaculty } = useAuth();
+	const { token, isAdmin, isFaculty, isStudent } = useAuth();
 	const { toast } = useToast();
+	const [view, setView] = useState('semester');
 	const [items, setItems] = useState([]);
+	const [quizItems, setQuizItems] = useState([]);
 	const [students, setStudents] = useState([]);
 	const [courses, setCourses] = useState([]);
 	const [modal, setModal] = useState(false);
@@ -37,15 +40,21 @@ export default function ResultsPage() {
 			.then((r) => setItems(r.items))
 			.catch((e) => toast(e.message, 'error'));
 
+	const loadQuizResults = () =>
+		listMyAttempts(token)
+			.then((rows) => setQuizItems(rows))
+			.catch((e) => toast(e.message, 'error'));
+
 	useEffect(() => {
 		load();
+		if (isStudent) loadQuizResults();
 		if (isAdmin || isFaculty) {
 			listStudents(token, { limit: 100 })
 				.then((r) => setStudents(r.items))
 				.catch((e) => toast(e.message, 'error'));
 			listCourses(token, { limit: 100 }).then((r) => setCourses(r.items));
 		}
-	}, [token]);
+	}, [token, isStudent, isAdmin, isFaculty]);
 
 	const handleCreate = async (e) => {
 		e.preventDefault();
@@ -83,7 +92,11 @@ export default function ResultsPage() {
 			<div className="page-header">
 				<div>
 					<h1>Results</h1>
-					<p>Semester results and mark sheets</p>
+					<p>
+						{isStudent
+							? 'Semester results and quiz outcomes'
+							: 'Semester results and mark sheets'}
+					</p>
 				</div>
 				{(isAdmin || isFaculty) && (
 					<button type="button" className="btn btn-primary" onClick={() => setModal(true)}>
@@ -92,7 +105,27 @@ export default function ResultsPage() {
 				)}
 			</div>
 
-			<div className="card table-wrap">
+			{isStudent && (
+				<div className="tabs" style={{ marginBottom: '1rem' }}>
+					<button
+						type="button"
+						className={`tab${view === 'semester' ? ' active' : ''}`}
+						onClick={() => setView('semester')}
+					>
+						Semester Results
+					</button>
+					<button
+						type="button"
+						className={`tab${view === 'quiz' ? ' active' : ''}`}
+						onClick={() => setView('quiz')}
+					>
+						Quiz Results
+					</button>
+				</div>
+			)}
+
+			{(!isStudent || view === 'semester') && (
+				<div className="card table-wrap">
 				<table className="table">
 					<thead>
 						<tr>
@@ -164,7 +197,61 @@ export default function ResultsPage() {
 						))}
 					</tbody>
 				</table>
-			</div>
+				</div>
+			)}
+
+			{isStudent && view === 'quiz' && (
+				<div className="card table-wrap">
+					<table className="table">
+						<thead>
+							<tr>
+								<th>Quiz</th>
+								<th>Course</th>
+								<th>Score</th>
+								<th>Status</th>
+								<th>Submitted</th>
+							</tr>
+						</thead>
+						<tbody>
+							{quizItems.length === 0 ? (
+								<tr>
+									<td colSpan={5} style={{ color: 'var(--text-muted)' }}>
+										No quiz attempts yet.
+									</td>
+								</tr>
+							) : (
+								quizItems.map((a) => (
+									<tr key={a._id}>
+										<td>{a.quiz?.title || 'Quiz'}</td>
+										<td>{a.quiz?.course?.courseCode || 'General'}</td>
+										<td>
+											{a.score ?? 0}/{a.totalMarks ?? 0}
+										</td>
+										<td>
+											<span
+												className={`badge ${
+													a.status === 'submitted'
+														? 'badge-green'
+														: a.status === 'disqualified'
+														? 'badge-red'
+														: 'badge-amber'
+												}`}
+											>
+												{a.status === 'disqualified' ? 'Disqualified' : a.status}
+											</span>
+										</td>
+										<td>
+											{a.submittedAt
+												? new Date(a.submittedAt).toLocaleString()
+												: 'In progress'}
+										</td>
+									</tr>
+								))
+							)}
+						</tbody>
+					</table>
+				</div>
+			)}
 
 			<Modal
 				open={modal}

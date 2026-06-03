@@ -120,7 +120,7 @@ export default function LoginPage() {
 								/>
 							</div>
 							<div className="form-group">
-								<label className="label">Department (password)</label>
+								<label className="label">Department</label>
 								<select
 									className="select"
 									value={department}

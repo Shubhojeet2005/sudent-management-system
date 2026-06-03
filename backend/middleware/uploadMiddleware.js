@@ -12,6 +12,8 @@ const ensureDir = (subdir) => {
 	return dir;
 };
 
+const isServerlessRuntime = () => Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+
 const diskStorage = (subdir) =>
 	multer.diskStorage({
 		destination: (req, file, cb) => {
@@ -53,9 +55,16 @@ const createUpload = ({ subdir, field, maxSize, filter }) =>
 		fileFilter: filter,
 	}).single(field);
 
+const createProfileUpload = ({ field, maxSize, filter }) =>
+	multer({
+		// Serverless platforms cannot persist local uploads. Keep bytes in memory.
+		storage: isServerlessRuntime() ? multer.memoryStorage() : diskStorage('profiles'),
+		limits: { fileSize: maxSize },
+		fileFilter: filter,
+	}).single(field);
+
 /** Profile photo upload — field name: profilePhoto */
-export const uploadProfile = createUpload({
-	subdir: 'profiles',
+export const uploadProfile = createProfileUpload({
 	field: 'profilePhoto',
 	maxSize: 2 * 1024 * 1024,
 	filter: imageFilter,
